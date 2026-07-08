@@ -1,0 +1,64 @@
+name: Publish apt repository
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "pool/**"
+      - "scripts/**"
+      - ".github/workflows/publish.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and sign apt metadata
+    runs-on: ubuntu-latest
+    env:
+      APT_TAP_GPG_PRIVATE_KEY: ${{ secrets.APT_TAP_GPG_PRIVATE_KEY }}
+      APT_TAP_GPG_PASSPHRASE: ${{ secrets.APT_TAP_GPG_PASSPHRASE }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install apt repository tools
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev apt-utils gnupg
+
+      - name: Import GPG signing key
+        if: ${{ env.APT_TAP_GPG_PRIVATE_KEY != '' }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.gnupg
+          chmod 700 ~/.gnupg
+          echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
+          gpgconf --kill gpg-agent || true
+          printf '%s\n' "$APT_TAP_GPG_PRIVATE_KEY" | gpg --batch --import
+
+      - name: Build repository metadata
+        run: ./scripts/build-repo.sh
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

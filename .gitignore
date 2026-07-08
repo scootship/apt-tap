@@ -1,0 +1,6 @@
+# Build output of scripts/build-repo.sh. Never committed -- published to
+# GitHub Pages as a fresh build artifact on every run instead.
+/site/
+
+# OS cruft
+.DS_Store
