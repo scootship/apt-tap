@@ -57,7 +57,7 @@ up in the actual repository once its own release workflow has pushed a `.deb` in
 1. Build your `.deb` in your own project's release workflow.
 2. Push it into `pool/main/<first-letter-of-source-name>/<source-name>/` on the `main`
    branch of this repository. A PAT with push access to this repo, stored as a secret
-   in your own project (e.g. `scootship/scootship` uses `APT_TAP_TOKEN`), is all that's
+   in your own project (e.g. `scootship/scootship` uses `SCOOTSHIP_RELEASE_TOKEN`), is all that's
    needed.
 3. This repository's own workflow rebuilds and republishes `dists/` automatically on
    the next push to `pool/**`. Your project's workflow never needs the signing key.
